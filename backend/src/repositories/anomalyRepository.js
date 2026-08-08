@@ -4,7 +4,7 @@ const pool = require("../db/pool");
  * Fetch active (unresolved) anomalies ordered by detected_at DESC
  * Optionally filter by gym_id and severity
  */
-async function getActiveAnomalies({ gym_id, severity }) {
+async function getActiveAnomalies({ gym_id, severity } = {}) {
   let query = `
     SELECT 
       a.id,
@@ -60,15 +60,16 @@ async function dismissAnomaly(id) {
   const query = `
     UPDATE anomalies
     SET dismissed = TRUE
-    WHERE id = $1
+    WHERE id = $1 AND severity != 'critical'
     RETURNING id, gym_id, type, severity, message, resolved, dismissed, detected_at;
   `;
   const { rows } = await pool.query(query, [id]);
-  return rows[0];
+  return rows[0] || null;
 }
 
 module.exports = {
   getActiveAnomalies,
   findById,
+  getAnomalyById: findById, // Alias to satisfy anomalyService calls
   dismissAnomaly,
 };

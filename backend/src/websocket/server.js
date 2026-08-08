@@ -2,32 +2,31 @@ const { WebSocketServer, WebSocket } = require("ws");
 
 let wss = null;
 
-/**
- * Initialize WebSocket Server attached to Express HTTP server
- */
 function initWebSocket(server) {
-  wss = new WebSocketServer({ server });
+  wss = new WebSocketServer({ noServer: true });
+
+  server.on("upgrade", (request, socket, head) => {
+    const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
+
+    // Route matching for root, /ws, or /ws/
+    if (pathname === "/" || pathname === "/ws" || pathname === "/ws/") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
 
   wss.on("connection", (ws) => {
-    console.log("Client connected to WebSocket");
-
-    // Ping/Pong keep-alive
     ws.isAlive = true;
     ws.on("pong", () => {
       ws.isAlive = true;
     });
-
-    ws.on("close", () => {
-      console.log("Client disconnected from WebSocket");
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket client error:", error);
-    });
   });
 
-  // Heartbeat interval to prune dead connections
   const interval = setInterval(() => {
+    if (!wss) return;
     wss.clients.forEach((ws) => {
       if (ws.isAlive === false) return ws.terminate();
       ws.isAlive = false;
@@ -35,21 +34,14 @@ function initWebSocket(server) {
     });
   }, 30000);
 
-  wss.on("close", () => {
-    clearInterval(interval);
-  });
+  wss.on("close", () => clearInterval(interval));
 
   return wss;
 }
 
-/**
- * Broadcast structured payload to all connected WebSocket clients
- */
 function broadcast(eventPayload) {
   if (!wss) return;
-
   const data = JSON.stringify(eventPayload);
-
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(data);
@@ -57,7 +49,4 @@ function broadcast(eventPayload) {
   });
 }
 
-module.exports = {
-  initWebSocket,
-  broadcast,
-};
+module.exports = { initWebSocket, broadcast };

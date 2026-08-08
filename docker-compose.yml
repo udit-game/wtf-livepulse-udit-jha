@@ -1,28 +1,41 @@
-services:
+version: '3.8'
 
+services:
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
+    container_name: wtf_livepulse_db
+    restart: always
     environment:
-      POSTGRES_DB: wtf_livepulse
-      POSTGRES_USER: wtf
-      POSTGRES_PASSWORD: wtf_secret
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/src/db/migrations:/docker-entrypoint-initdb.d
+      POSTGRES_DB: ${POSTGRES_DB:-wtf_livepulse}
+      POSTGRES_USER: ${POSTGRES_USER:-wtf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wtf_secret}
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Migrations executed sequentially on initial DB creation
+      - ./backend/src/db/migrations/001_extensions.sql:/docker-entrypoint-initdb.d/01_extensions.sql
+      - ./backend/src/db/migrations/002_tables.sql:/docker-entrypoint-initdb.d/02_tables.sql
+      - ./backend/src/db/migrations/003_indexes.sql:/docker-entrypoint-initdb.d/03_indexes.sql
+      - ./backend/src/db/migrations/004_views.sql:/docker-entrypoint-initdb.d/04_views.sql
+      # Seed data executed last
+      - ./backend/src/db/seeds/seed.sql:/docker-entrypoint-initdb.d/05_seed.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wtf -d wtf_livepulse"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wtf} -d ${POSTGRES_DB:-wtf_livepulse}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wtf_livepulse_backend
+    restart: always
     environment:
-      DATABASE_URL: postgres://wtf:wtf_secret@db:5432/wtf_livepulse
       PORT: 3001
-      NODE_ENV: development
+      DATABASE_URL: postgres://${POSTGRES_USER:-wtf}:${POSTGRES_PASSWORD:-wtf_secret}@db:5432/${POSTGRES_DB:-wtf_livepulse}
+      NODE_ENV: production
     ports:
       - "3001:3001"
     depends_on:
@@ -30,11 +43,18 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:3001/api
+        VITE_WS_URL: ws://localhost:3001/ws
+    container_name: wtf_livepulse_frontend
+    restart: always
     ports:
       - "3000:80"
     depends_on:
       - backend
 
 volumes:
-  postgres_data:
+  pgdata:

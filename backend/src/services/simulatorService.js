@@ -1,14 +1,20 @@
 const simulatorRepository = require("../repositories/simulatorRepository");
 
+// In-memory simulation state singleton
 let state = {
-  status: "stopped",
-  speed: 1,
+  status: "stopped", // 'running' | 'paused' | 'stopped'
+  speed: 1,          // 1x | 5x | 10x
 };
 
-async function startSimulation(speed = 1) {
+function getStatus() {
+  return state;
+}
+
+function startSimulation(speed = 1) {
+  const validSpeeds = [1, 5, 10];
   const parsedSpeed = Number(speed);
 
-  if (![1, 5, 10].includes(parsedSpeed)) {
+  if (!validSpeeds.includes(parsedSpeed)) {
     const error = new Error("Speed must be 1, 5, or 10");
     error.statusCode = 400;
     throw error;
@@ -20,7 +26,7 @@ async function startSimulation(speed = 1) {
   return { status: "running", speed: state.speed };
 }
 
-async function stopSimulation() {
+function stopSimulation() {
   state.status = "paused";
   return { status: "paused" };
 }
@@ -29,12 +35,14 @@ async function resetSimulation() {
   state.status = "paused";
   state.speed = 1;
 
+  // Clear live open check-ins from PostgreSQL
   await simulatorRepository.resetToBaseline();
 
   return { status: "reset" };
 }
 
 module.exports = {
+  getStatus,
   startSimulation,
   stopSimulation,
   resetSimulation,

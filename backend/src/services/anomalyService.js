@@ -1,7 +1,7 @@
 const anomalyRepository = require("../repositories/anomalyRepository");
 
 async function getActiveAnomalies(gymId, severity) {
-  return anomalyRepository.getActiveAnomalies(gymId, severity);
+  return anomalyRepository.getActiveAnomalies({ gym_id: gymId, severity });
 }
 
 async function dismissAnomaly(id) {

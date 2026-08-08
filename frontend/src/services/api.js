@@ -20,7 +20,8 @@ export async function fetchGyms() {
 
 export async function fetchGymLiveSnapshot(gymId) {
   const res = await fetch(`${BASE_URL}/gyms/${gymId}/live`);
-  return await handleResponse(res);
+  const json = await handleResponse(res);
+  return json.data;
 }
 
 export async function fetchGymAnalytics(gymId, dateRange = "7d") {
@@ -59,19 +60,22 @@ export async function startSimulator(speed = 1) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ speed }),
   });
-  return await handleResponse(res);
+  const json = await handleResponse(res);
+  return json.data;
 }
 
 export async function stopSimulator() {
   const res = await fetch(`${BASE_URL}/simulator/stop`, {
     method: "POST",
   });
-  return await handleResponse(res);
+  const json = await handleResponse(res);
+  return json.data;
 }
 
 export async function resetSimulator() {
   const res = await fetch(`${BASE_URL}/simulator/reset`, {
     method: "POST",
   });
-  return await handleResponse(res);
+  const json = await handleResponse(res);
+  return json.data;
 }

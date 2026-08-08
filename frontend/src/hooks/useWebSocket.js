@@ -5,10 +5,17 @@ export function useWebSocket(onEventReceived) {
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const handlerRef = useRef(onEventReceived);
+
+  useEffect(() => {
+    handlerRef.current = onEventReceived;
+  }, [onEventReceived]);
 
   const connect = useCallback(() => {
     try {
-      const ws = new WebSocket(config.wsUrl);
+      // Dynamic fallback to current host if env variable is relative
+      const wsUrl = config.wsUrl || `ws://${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -18,8 +25,8 @@ export function useWebSocket(onEventReceived) {
       ws.onmessage = (event) => {
         try {
           const parsedData = JSON.parse(event.data);
-          if (onEventReceived) {
-            onEventReceived(parsedData);
+          if (handlerRef.current) {
+            handlerRef.current(parsedData);
           }
         } catch (err) {
           console.error("Failed to parse WS payload:", err);
@@ -39,7 +46,7 @@ export function useWebSocket(onEventReceived) {
       console.error("WebSocket connection error:", err);
       reconnectTimeoutRef.current = setTimeout(connect, 3000);
     }
-  }, [onEventReceived]);
+  }, []);
 
   useEffect(() => {
     connect();
