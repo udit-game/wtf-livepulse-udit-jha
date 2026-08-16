@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { fetchAnomalies, dismissAnomaly } from "../../services/api";
+import Loader from "../ui/Loader";
+import ErrorState from "../ui/ErrorState";
 
 export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
   const [anomalies, setAnomalies] = useState([]);
   const [filterGym, setFilterGym] = useState(false);
   const [severityFilter, setSeverityFilter] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const loadAnomalies = async () => {
+    setErrorMsg("");
+    setLoading(true);
     try {
       const data = await fetchAnomalies(filterGym ? gymId : "", severityFilter);
       setAnomalies(data);
     } catch (err) {
       console.error("Failed to load anomalies:", err);
+      setErrorMsg(err.message || "Failed to load anomalies");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,11 +104,9 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-lg">
-          {errorMsg}
-        </div>
-      )}
+      {errorMsg && <ErrorState message={errorMsg} onRetry={loadAnomalies} />}
+
+      {loading && <Loader label="Loading anomalies..." />}
 
       {/* Anomalies Table */}
       <div className="overflow-x-auto">
@@ -116,7 +122,7 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-theme-border/60">
-            {anomalies.length === 0 ? (
+            {!loading && anomalies.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-slate-500 font-mono">
                   No active anomalies matching criteria

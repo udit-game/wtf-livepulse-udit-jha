@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { startSimulator, stopSimulator, resetSimulator } from "../../services/api";
+import Loader from "../ui/Loader";
 
 export function SimulatorControlPanel() {
   const [status, setStatus] = useState("stopped"); // 'running' | 'paused' | 'stopped'
@@ -52,15 +53,18 @@ export function SimulatorControlPanel() {
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Simulator Control Engine
         </span>
-        <span
-          className={`px-2 py-0.5 rounded text-[0.85em] font-bold font-mono border ${
-            status === "running"
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-              : "bg-slate-500/10 text-slate-400 border-slate-500/30"
-          }`}
-        >
-          {status.toUpperCase()} {status === "running" && `(${speed}x)`}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-2 py-0.5 rounded text-[0.85em] font-bold font-mono border ${
+              status === "running"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                : "bg-slate-500/10 text-slate-400 border-slate-500/30"
+            }`}
+          >
+            {status.toUpperCase()} {status === "running" && `(${speed}x)`}
+          </span>
+          {loading && <Loader size={4} label="" />}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

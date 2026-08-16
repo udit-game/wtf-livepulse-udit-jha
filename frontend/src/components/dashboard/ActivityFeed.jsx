@@ -1,4 +1,6 @@
 import React from "react";
+import Loader from "../ui/Loader";
+import ErrorState from "../ui/ErrorState";
 
 const EVENT_BADGES = {
   checkin: { label: "IN", style: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
@@ -6,9 +8,16 @@ const EVENT_BADGES = {
   payment: { label: "PAID", style: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
 };
 
-export function ActivityFeed({ events = [] }) {
+export function ActivityFeed({ events = [], isLoading = false, error = "", onRetry }) {
   return (
     <div className="bg-theme-card border border-theme-border p-5 rounded-xl shadow-md flex flex-col h-[380px]">
+      {error ? (
+        <div className="mb-3">
+          <ErrorState message={error} onRetry={onRetry} />
+        </div>
+      ) : isLoading ? (
+        <Loader label="Loading activity..." />
+      ) : null}
       <div className="flex items-center justify-between pb-3 border-b border-theme-border mb-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
           Recent Activity Feed

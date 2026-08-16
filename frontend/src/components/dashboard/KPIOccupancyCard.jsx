@@ -1,12 +1,19 @@
 import React from "react";
 import { theme } from "../../theme";
+import Loader from "../ui/Loader";
+import ErrorState from "../ui/ErrorState";
 
-export function KPIOccupancyCard({ occupancy = 0, capacity = 100 }) {
+export function KPIOccupancyCard({ occupancy = 0, capacity = 100, isLoading = false, error = "", onRetry }) {
   const capacityPct = capacity > 0 ? parseFloat(((occupancy / capacity) * 100).toFixed(1)) : 0;
   const status = theme.getOccupancyStatus(capacityPct);
 
   return (
     <div className="bg-theme-card border border-theme-border p-5 rounded-xl flex flex-col justify-between shadow-md">
+      {error ? (
+        <ErrorState message={error} onRetry={onRetry} />
+      ) : isLoading ? (
+        <Loader label="Loading occupancy..." />
+      ) : null}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Live Occupancy

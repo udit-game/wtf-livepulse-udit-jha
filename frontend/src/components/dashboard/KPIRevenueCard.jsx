@@ -1,8 +1,15 @@
 import React from "react";
+import Loader from "../ui/Loader";
+import ErrorState from "../ui/ErrorState";
 
-export function KPIRevenueCard({ todayRevenue = 0 }) {
+export function KPIRevenueCard({ todayRevenue = 0, isLoading = false, error = "", onRetry }) {
   return (
     <div className="bg-theme-card border border-theme-border p-5 rounded-xl flex flex-col justify-between shadow-md">
+      {error ? (
+        <ErrorState message={error} onRetry={onRetry} />
+      ) : isLoading ? (
+        <Loader label="Loading revenue..." />
+      ) : null}
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Today's Revenue
