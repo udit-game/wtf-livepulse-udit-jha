@@ -61,7 +61,8 @@ export async function startSimulator(speed = 1) {
     body: JSON.stringify({ speed }),
   });
   const json = await handleResponse(res);
-  return json.data;
+  // Backend now returns the simulation state directly (e.g. { status: 'running', speed: 1 })
+  return json;
 }
 
 export async function stopSimulator() {

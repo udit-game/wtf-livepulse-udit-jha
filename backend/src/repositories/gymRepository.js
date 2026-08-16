@@ -44,6 +44,15 @@ async function getAllGyms() {
   return result.rows;
 }
 
+async function getAllActiveGyms() {
+  const result = await pool.query(`
+    SELECT id FROM gyms WHERE status = 'active'
+  `);
+
+  return result.rows;
+}
+
 module.exports = {
   getAllGyms,
+  getAllActiveGyms
 };

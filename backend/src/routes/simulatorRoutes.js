@@ -7,11 +7,9 @@ router.post("/start", async (req, res, next) => {
   try {
     const { speed = 1 } = req.body;
     const data = await simulatorService.startSimulation(speed);
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json(data); // Returns { status: 'running', speed: 1 } directly
   } catch (err) {
-    if (err.statusCode) {
-      return res.status(err.statusCode).json({ success: false, error: err.message });
-    }
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
     next(err);
   }
 });

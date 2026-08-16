@@ -1,4 +1,4 @@
-const simulatorRepository = require("../repositories/simulatorRepository");
+const simulator = require("../jobs/simulator");
 
 // In-memory simulation state singleton
 let state = {
@@ -23,21 +23,21 @@ function startSimulation(speed = 1) {
   state.status = "running";
   state.speed = parsedSpeed;
 
+  simulator.startSimulatorTimer(state);
+
   return { status: "running", speed: state.speed };
 }
 
 function stopSimulation() {
   state.status = "paused";
+  simulator.stopSimulatorTimer();
   return { status: "paused" };
 }
 
 async function resetSimulation() {
   state.status = "paused";
   state.speed = 1;
-
-  // Clear live open check-ins from PostgreSQL
-  await simulatorRepository.resetToBaseline();
-
+  await simulator.handleSystemResetEvent(); 
   return { status: "reset" };
 }
 

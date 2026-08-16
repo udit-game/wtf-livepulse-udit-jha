@@ -5,7 +5,6 @@ const cors = require("cors");
 const pool = require("./db/pool");
 const cfg = require("./config");
 const { initWebSocket } = require("./websocket/server");
-const { startSimulatorJob } = require("./jobs/simulator");
 const { startAnomalyDetectorJob } = require("./jobs/anomalyDetector");
 const { startViewRefresherJob } = require("./jobs/viewRefresher");
 
@@ -64,7 +63,6 @@ const PORT = cfg.port;
 
 server.listen(PORT, () => {
   console.log(`Backend & WebSocket server running on port ${PORT}`);
-  startSimulatorJob();
   startAnomalyDetectorJob();
   startViewRefresherJob();
 });
