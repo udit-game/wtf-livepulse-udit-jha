@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchAnomalies, dismissAnomaly } from "../../services/api";
 
-export function AnomalyLogTab({ gymId }) {
+export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
   const [anomalies, setAnomalies] = useState([]);
   const [filterGym, setFilterGym] = useState(false);
   const [severityFilter, setSeverityFilter] = useState("");
@@ -19,6 +19,38 @@ export function AnomalyLogTab({ gymId }) {
   useEffect(() => {
     loadAnomalies();
   }, [gymId, filterGym, severityFilter]);
+
+  // Apply resolved anomaly events passed from parent in real-time
+  useEffect(() => {
+    if (!resolvedAnomalies || resolvedAnomalies.length === 0) return;
+
+    // Process each resolved event (idempotent)
+    resolvedAnomalies.forEach((event) => {
+      setAnomalies((prev) => {
+        const existing = prev.find((a) => a.id === (event.id || event.anomaly_id));
+        if (existing) {
+          return prev.map((a) =>
+            a.id === existing.id ? { ...a, resolved: true, resolved_at: event.resolved_at || new Date().toISOString() } : a
+          );
+        }
+
+        // If not present, add the resolved anomaly (show all anomalies regardless of selected gym)
+        const anomaly = {
+          id: event.id || event.anomaly_id,
+          gym_id: event.gym_id,
+          gym_name: event.gym_name,
+          type: event.anomaly_type,
+          severity: event.severity,
+          message: event.message || "",
+          detected_at: event.detected_at || new Date().toISOString(),
+          resolved: true,
+          resolved_at: event.resolved_at || new Date().toISOString(),
+        };
+        return [anomaly, ...prev];
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedAnomalies]);
 
   const handleDismiss = async (anomalyId) => {
     setErrorMsg("");
@@ -111,7 +143,9 @@ export function AnomalyLogTab({ gymId }) {
                     {new Date(a.detected_at).toLocaleTimeString("en-IN")}
                   </td>
                   <td className="py-3 px-3 text-right">
-                    {a.severity === "critical" ? (
+                    {a.resolved ? (
+                      <span className="text-[10px] text-emerald-300 font-mono">Resolved</span>
+                    ) : a.severity === "critical" ? (
                       <span className="text-[10px] text-slate-500 font-mono italic" title="Critical anomalies cannot be manually dismissed">
                         Locked (403)
                       </span>

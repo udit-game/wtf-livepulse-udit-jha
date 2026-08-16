@@ -1,5 +1,5 @@
-const pool = require("../db/pool");
 const { broadcast } = require("../websocket/server");
+const anomalyRepo = require("../repositories/anomalyRepository");
 
 /**
  * Pure Evaluation Functions (Exported for Jest Unit Testing)
@@ -37,8 +37,7 @@ const config = require("../config");
 const APP_TIMEZONE = config.appTimezone || 'Asia/Kolkata';
 async function checkAnomalies() {
   try {
-    const gymsQuery = await pool.query(`SELECT id, name, capacity, opens_at, closes_at, status FROM gyms WHERE status = 'active'`);
-    const gyms = gymsQuery.rows;
+    const gyms = await anomalyRepo.getActiveGyms();
 
     for (const gym of gyms) {
       await evaluateGymZeroCheckins(gym);
@@ -57,24 +56,14 @@ async function evaluateGymZeroCheckins(gym) {
   const nowInIST = new Date(new Date().toLocaleString("en-US", { timeZone: APP_TIMEZONE }));
   const currentISTTime = `${String(nowInIST.getHours()).padStart(2, '0')}:${String(nowInIST.getMinutes()).padStart(2, '0')}`;
   
-  const isOperatingHours = currentISTTime >= gym.opens_at && currentISTTime <= gym.closes_at || true; // Overide for testing purposes
+  const isOperatingHours = currentISTTime >= gym.opens_at && currentISTTime <= gym.closes_at;
 
-  const countRes = await pool.query(
-    `SELECT COUNT(*)::INTEGER AS recent_count 
-     FROM checkins 
-     WHERE gym_id = $1 AND checked_in >= NOW() - INTERVAL '2 hours'`,
-    [gym.id]
-  );
-  
-  const recentCount = countRes.rows[0].recent_count;
+  const recentCount = await anomalyRepo.getRecentCheckinCount(gym.id);
   const shouldTrigger = evaluateZeroCheckins(gym.status, isOperatingHours, recentCount);
 
-  const existingRes = await pool.query(
-    `SELECT id FROM anomalies WHERE gym_id = $1 AND type = 'zero_checkins' AND resolved = FALSE`,
-    [gym.id]
-  );
+  const existingRes = await anomalyRepo.getOpenAnomalyByType(gym.id, 'zero_checkins');
 
-  if (shouldTrigger && existingRes.rows.length === 0) {
+  if (shouldTrigger && existingRes.length === 0) {
     await triggerAnomaly({
       gymId: gym.id,
       gymName: gym.name,
@@ -82,8 +71,8 @@ async function evaluateGymZeroCheckins(gym) {
       severity: "warning",
       message: `Zero check-ins recorded in the last 2 hours during operating hours at ${gym.name}.`,
     });
-  } else if (!shouldTrigger && existingRes.rows.length > 0) {
-    await resolveAnomaly(existingRes.rows[0].id, gym.id);
+  } else if (recentCount > 0 && existingRes.length > 0) {
+    await resolveAnomaly(existingRes[0].id, gym.id);
   }
 }
 
@@ -91,20 +80,12 @@ async function evaluateGymZeroCheckins(gym) {
  * Rule 2: Capacity Breach Alert (Critical)
  */
 async function evaluateGymCapacityBreach(gym) {
-  const occRes = await pool.query(
-    `SELECT COUNT(*)::INTEGER AS current_occ FROM checkins WHERE gym_id = $1 AND checked_out IS NULL`,
-    [gym.id]
-  );
-  
-  const occupancy = occRes.rows[0].current_occ;
+  const occupancy = await anomalyRepo.getCurrentOccupancy(gym.id);
   const { trigger, resolve, pct } = evaluateCapacityBreach(occupancy, gym.capacity);
 
-  const existingRes = await pool.query(
-    `SELECT id FROM anomalies WHERE gym_id = $1 AND type = 'capacity_breach' AND resolved = FALSE`,
-    [gym.id]
-  );
+  const existingRes = await anomalyRepo.getOpenAnomalyByType(gym.id, 'capacity_breach');
 
-  if (trigger && existingRes.rows.length === 0) {
+  if (trigger && existingRes.length === 0) {
     await triggerAnomaly({
       gymId: gym.id,
       gymName: gym.name,
@@ -112,8 +93,8 @@ async function evaluateGymCapacityBreach(gym) {
       severity: "critical",
       message: `Capacity breach detected at ${gym.name}! Occupancy is at ${pct}% (${occupancy}/${gym.capacity}).`,
     });
-  } else if (resolve && existingRes.rows.length > 0) {
-    await resolveAnomaly(existingRes.rows[0].id, gym.id);
+  } else if (resolve && existingRes.length > 0) {
+    await resolveAnomaly(existingRes[0].id, gym.id);
   }
 }
 
@@ -122,34 +103,13 @@ async function evaluateGymCapacityBreach(gym) {
  */
 async function evaluateGymRevenueDrop(gym) {
   // Today's Revenue
-  const todayRes = await pool.query(
-    `SELECT COALESCE(SUM(amount), 0)::FLOAT AS today_total 
-     FROM payments 
-     WHERE gym_id = $1 AND paid_at >= DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}'`,
-    [gym.id]
-  );
-
-  // Same Day Last Week Revenue
-  const lastWeekRes = await pool.query(
-    `SELECT COALESCE(SUM(amount), 0)::FLOAT AS last_week_total 
-     FROM payments 
-     WHERE gym_id = $1 
-       AND paid_at >= (DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}' - INTERVAL '7 days')
-       AND paid_at < (DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}' - INTERVAL '6 days')`,
-    [gym.id]
-  );
-
-  const todayRevenue = todayRes.rows[0].today_total;
-  const lastWeekRevenue = lastWeekRes.rows[0].last_week_total;
+  const todayRevenue = await anomalyRepo.getTodayRevenue(gym.id, APP_TIMEZONE);
+  const lastWeekRevenue = await anomalyRepo.getLastWeekSameDayRevenue(gym.id, APP_TIMEZONE);
 
   const { trigger, resolve, dropPct } = evaluateRevenueDrop(todayRevenue, lastWeekRevenue);
 
-  const existingRes = await pool.query(
-    `SELECT id FROM anomalies WHERE gym_id = $1 AND type = 'revenue_drop' AND resolved = FALSE`,
-    [gym.id]
-  );
-
-  if (trigger && existingRes.rows.length === 0) {
+  const existingRes = await anomalyRepo.getOpenAnomalyByType(gym.id, 'revenue_drop');
+  if (trigger && existingRes.length === 0) {
     await triggerAnomaly({
       gymId: gym.id,
       gymName: gym.name,
@@ -157,8 +117,8 @@ async function evaluateGymRevenueDrop(gym) {
       severity: "warning",
       message: `Significant revenue drop detected at ${gym.name}. Revenue today is down ${dropPct}% vs last week.`,
     });
-  } else if (resolve && existingRes.rows.length > 0) {
-    await resolveAnomaly(existingRes.rows[0].id, gym.id);
+  } else if (resolve && existingRes.length > 0) {
+    await resolveAnomaly(existingRes[0].id, gym.id);
   }
 }
 
@@ -166,14 +126,7 @@ async function evaluateGymRevenueDrop(gym) {
  * Writes new anomaly to DB & broadcasts ANOMALY_DETECTED event over WebSockets
  */
 async function triggerAnomaly({ gymId, gymName, type, severity, message }) {
-  const insertRes = await pool.query(
-    `INSERT INTO anomalies (gym_id, type, severity, message) 
-     VALUES ($1, $2, $3, $4) 
-     RETURNING id, detected_at`,
-    [gymId, type, severity, message]
-  );
-
-  const anomaly = insertRes.rows[0];
+  const anomaly = await anomalyRepo.insertAnomaly({ gymId, type, severity, message });
 
   broadcast({
     type: "ANOMALY_DETECTED",
@@ -192,12 +145,7 @@ async function triggerAnomaly({ gymId, gymName, type, severity, message }) {
 async function resolveAnomaly(anomalyId, gymId) {
   const now = new Date().toISOString();
 
-  await pool.query(
-    `UPDATE anomalies 
-     SET resolved = TRUE, resolved_at = $1 
-     WHERE id = $2`,
-    [now, anomalyId]
-  );
+  await anomalyRepo.resolveAnomalyById(anomalyId, now);
 
   broadcast({
     type: "ANOMALY_RESOLVED",

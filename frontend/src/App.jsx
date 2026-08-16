@@ -17,6 +17,7 @@ export default function App() {
     activeGym,
     allGymSummary,
     unreadAnomalyCount,
+    resolvedAnomalies,
     isConnected,
   } = useGymDashboard();
 
@@ -49,7 +50,7 @@ export default function App() {
           )}
 
           {activeTab === "anomalies" && (
-            <AnomalyLogTab gymId={selectedGymId} />
+            <AnomalyLogTab gymId={selectedGymId} resolvedAnomalies={resolvedAnomalies} />
           )}
         </main>
       </div>

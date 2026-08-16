@@ -27,6 +27,7 @@ export function useGymDashboard() {
 
   const [snapshot, setSnapshot] = useState(EMPTY_SNAPSHOT);
   const [unreadAnomalies, setUnreadAnomalies] = useState([]);
+  const [resolvedAnomalies, setResolvedAnomalies] = useState([]);
 
   // Load initial gyms list on mount
   useEffect(() => {
@@ -120,9 +121,11 @@ export function useGymDashboard() {
       }
 
       if (event.type === "ANOMALY_DETECTED") {
-        setUnreadAnomalies((prev) => [event, ...prev]);
+        setUnreadAnomalies((prev) => [{ ...event, id: event.anomaly_id }, ...prev]);
       } else if (event.type === "ANOMALY_RESOLVED") {
         setUnreadAnomalies((prev) => prev.filter((a) => a.id !== event.anomaly_id));
+        // Record resolved anomaly events for downstream consumers (AnomalyLogTab)
+        setResolvedAnomalies((prev) => [{ ...event, id: event.anomaly_id }, ...prev]);
       }
     },
     [selectedGymId]
@@ -148,6 +151,7 @@ export function useGymDashboard() {
     activeGym,
     allGymSummary,
     unreadAnomalyCount: unreadAnomalies.length,
+    resolvedAnomalies,
     isConnected,
   };
 }
