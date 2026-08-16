@@ -8,9 +8,7 @@ router.get("/", async (req, res) => {
   try {
     const gyms = await gymService.getAllGyms();
 
-    res.json({
-      data: gyms,
-    });
+    res.status(200).json(gyms);
   } catch (error) {
     console.error("Failed to fetch gyms:", error);
 

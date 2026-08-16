@@ -18,7 +18,7 @@ router.post("/start", async (req, res, next) => {
 router.post("/stop", async (req, res, next) => {
   try {
     const data = await simulatorService.stopSimulation();
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json(data);
   } catch (err) {
     next(err);
   }
@@ -28,7 +28,7 @@ router.post("/stop", async (req, res, next) => {
 router.post("/reset", async (req, res, next) => {
   try {
     const data = await simulatorService.resetSimulation();
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json(data);
   } catch (err) {
     next(err);
   }

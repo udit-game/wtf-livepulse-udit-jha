@@ -70,7 +70,7 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
             System Anomaly Audit Log
           </h3>
-          <p className="text-[11px] text-slate-500">Live anomaly tracking and rule resolution</p>
+          <p className="text-[0.9em] text-slate-500">Live anomaly tracking and rule resolution</p>
         </div>
 
         <div className="flex items-center gap-3 text-xs">
@@ -105,7 +105,7 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
       {/* Anomalies Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-theme-bg text-[#64748B] uppercase font-mono text-[10px] border-b border-theme-border">
+          <thead className="bg-theme-bg text-[#64748B] uppercase font-mono text-[0.85em] border-b border-theme-border">
             <tr>
               <th className="py-2.5 px-3">Severity</th>
               <th className="py-2.5 px-3">Type</th>
@@ -127,7 +127,7 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
                 <tr key={a.id} className="hover:bg-theme-bg/50 transition">
                   <td className="py-3 px-3">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                      className={`px-2 py-0.5 rounded text-[0.85em] font-bold uppercase border ${
                         a.severity === "critical"
                           ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
                           : "bg-amber-500/10 text-amber-400 border-amber-500/30"
@@ -144,17 +144,17 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
                   </td>
                   <td className="py-3 px-3 text-right">
                     {a.resolved ? (
-                      <span className="text-[10px] text-emerald-300 font-mono">Resolved</span>
+                      <span className="text-[0.85em] text-emerald-300 font-mono">Resolved</span>
                     ) : a.severity === "critical" ? (
-                      <span className="text-[10px] text-slate-500 font-mono italic" title="Critical anomalies cannot be manually dismissed">
+                      <span className="text-[0.85em] text-slate-500 font-mono italic" title="Critical anomalies cannot be manually dismissed">
                         Locked (403)
                       </span>
                     ) : a.dismissed ? (
-                      <span className="text-[10px] text-slate-500 font-mono">Dismissed</span>
+                      <span className="text-[0.85em] text-slate-500 font-mono">Dismissed</span>
                     ) : (
                       <button
                         onClick={() => handleDismiss(a.id)}
-                        className="px-2.5 py-1 bg-theme-border hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium transition"
+                        className="px-2.5 py-1 bg-theme-border hover:bg-slate-700 text-slate-200 rounded text-[0.9em] font-medium transition"
                       >
                         Dismiss
                       </button>

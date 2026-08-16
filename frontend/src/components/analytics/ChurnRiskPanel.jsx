@@ -8,7 +8,7 @@ export function ChurnRiskPanel({ members = [] }) {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
             Churn Risk Warning List
           </h3>
-          <p className="text-[11px] text-slate-500">Active members absent for 45+ days</p>
+          <p className="text-[0.9em] text-slate-500">Active members absent for 45+ days</p>
         </div>
         <span className="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded font-mono font-bold">
           {members.length} At Risk
@@ -33,12 +33,12 @@ export function ChurnRiskPanel({ members = [] }) {
               >
                 <div>
                   <p className="font-bold text-slate-200">{m.name}</p>
-                  <p className="text-[10px] text-slate-400 font-mono">{m.phone || m.email}</p>
+                  <p className="text-[0.85em] text-slate-400 font-mono">{m.phone || m.email}</p>
                 </div>
 
                 <div className="text-right">
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    className={`text-[0.85em] font-bold px-2 py-0.5 rounded border ${
                       m.risk_level === "CRITICAL"
                         ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
                         : "bg-amber-500/10 text-amber-400 border-amber-500/30"

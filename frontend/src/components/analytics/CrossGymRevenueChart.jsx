@@ -15,7 +15,7 @@ export function CrossGymRevenueChart({ crossGymData = [] }) {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
             Cross-Gym Revenue Comparison (Last 30 Days)
           </h3>
-          <p className="text-[11px] text-slate-500">30-day performance ranking across all 10 locations</p>
+          <p className="text-[0.9em] text-slate-500">30-day performance ranking across all 10 locations</p>
         </div>
       </div>
 

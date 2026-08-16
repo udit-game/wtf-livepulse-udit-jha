@@ -12,7 +12,7 @@ export function Navbar({
   setActiveTab,
 }) {
   return (
-    <header className="bg-themeCard border-b border-themeBorder text-slate-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 fixed top-0 left-0 right-0 z-50 shadow-lg">
+    <header className="sticky top-0 z-50 bg-theme-card border-b border-theme-border text-slate-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
       {/* Brand & Connection Status */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -47,7 +47,7 @@ export function Navbar({
             >
               {tab}
               {tab === "anomalies" && unreadAnomalyCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-bounce">
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[0.9em] font-bold px-1.5 py-0.5 rounded-full animate-bounce">
                   {unreadAnomalyCount}
                 </span>
               )}

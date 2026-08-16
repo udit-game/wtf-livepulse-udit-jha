@@ -9,9 +9,7 @@ router.get("/gyms/:id/live", async (req, res) => {
       req.params.id
     );
 
-    res.json({
-      data,
-    });
+    res.status(200).json(data);
   } catch (error) {
     console.error("Failed to fetch live gym snapshot:", error);
 

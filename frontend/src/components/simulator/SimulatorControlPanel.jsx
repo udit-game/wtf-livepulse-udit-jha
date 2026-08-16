@@ -53,7 +53,7 @@ export function SimulatorControlPanel() {
           Simulator Control Engine
         </span>
         <span
-          className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
+          className={`px-2 py-0.5 rounded text-[0.85em] font-bold font-mono border ${
             status === "running"
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
               : "bg-slate-500/10 text-slate-400 border-slate-500/30"

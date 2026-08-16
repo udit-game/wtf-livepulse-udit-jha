@@ -35,7 +35,7 @@ export default function App() {
           setActiveTab={setActiveTab}
         />
 
-        <main className="pt-22 p-6 max-w-7xl mx-auto space-y-6">
+        <main className="p-6 max-w-7xl mx-auto space-y-6">
           <SimulatorControlPanel />
 
           {activeTab === "dashboard" && (

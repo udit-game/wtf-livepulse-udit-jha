@@ -5,11 +5,18 @@
   --color-theme-card: #1A1A2E;
   --color-theme-border: #2A2A4A;
   --color-theme-brand: #F97316;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --text-xs: clamp(0.8125rem, 1.5vw, 0.875rem);
 }
 
 body {
   margin: 0;
-  background-color: #0D0D1A;
+  font-family: var(--font-sans);
+  background-color: var(--color-theme-bg);
   color: #E2E8F0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-size: clamp(13px, 16px, 18px); 
+  -webkit-font-smoothing: antialiased;
 }

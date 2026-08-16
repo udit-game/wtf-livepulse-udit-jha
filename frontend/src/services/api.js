@@ -15,25 +15,25 @@ async function handleResponse(res) {
 export async function fetchGyms() {
   const res = await fetch(`${BASE_URL}/gyms`);
   const json = await handleResponse(res);
-  return json.data || [];
+  return json || [];
 }
 
 export async function fetchGymLiveSnapshot(gymId) {
   const res = await fetch(`${BASE_URL}/gyms/${gymId}/live`);
   const json = await handleResponse(res);
-  return json.data;
+  return json;
 }
 
 export async function fetchGymAnalytics(gymId, dateRange = "7d") {
   const res = await fetch(`${BASE_URL}/gyms/${gymId}/analytics?dateRange=${dateRange}`);
   const json = await handleResponse(res);
-  return json.data || {};
+  return json || {};
 }
 
 export async function fetchCrossGymRevenue() {
   const res = await fetch(`${BASE_URL}/analytics/cross-gym`);
   const json = await handleResponse(res);
-  return json.data || [];
+  return json || [];
 }
 
 export async function fetchAnomalies(gymId = "", severity = "") {
@@ -43,7 +43,7 @@ export async function fetchAnomalies(gymId = "", severity = "") {
   
   const res = await fetch(url);
   const json = await handleResponse(res);
-  return json.data || [];
+  return json || [];
 }
 
 export async function dismissAnomaly(anomalyId) {
@@ -51,7 +51,7 @@ export async function dismissAnomaly(anomalyId) {
     method: "PATCH",
   });
   const json = await handleResponse(res);
-  return json.data;
+  return json;
 }
 
 export async function startSimulator(speed = 1) {
@@ -70,7 +70,7 @@ export async function stopSimulator() {
     method: "POST",
   });
   const json = await handleResponse(res);
-  return json.data;
+  return json;
 }
 
 export async function resetSimulator() {
@@ -78,5 +78,5 @@ export async function resetSimulator() {
     method: "POST",
   });
   const json = await handleResponse(res);
-  return json.data;
+  return json;
 }

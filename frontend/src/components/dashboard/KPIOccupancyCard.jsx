@@ -11,13 +11,13 @@ export function KPIOccupancyCard({ occupancy = 0, capacity = 100 }) {
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Live Occupancy
         </span>
-        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${status.className}`}>
+        <span className={`text-[0.85em] font-bold px-2 py-0.5 rounded-full border ${status.className}`}>
           {status.label} ({capacityPct}%)
         </span>
       </div>
 
       <div className="my-4 flex items-baseline gap-2">
-        <span className="text-4xl font-extrabold text-white tracking-tight">{occupancy}</span>
+        <span className="font-mono text-4xl font-bold text-white tracking-tight">{occupancy}</span>
         <span className="text-sm font-medium text-slate-400">/ {capacity} capacity</span>
       </div>
 

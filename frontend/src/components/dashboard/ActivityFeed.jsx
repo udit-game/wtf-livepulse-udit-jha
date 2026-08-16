@@ -36,20 +36,20 @@ export function ActivityFeed({ events = [] }) {
                 className="flex items-center justify-between bg-theme-bg p-2.5 rounded-lg border border-theme-border/60 text-xs hover:border-theme-border transition"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${badge.style}`}>
+                  <span className={`px-2 py-0.5 rounded text-[0.85em] font-bold border ${badge.style}`}>
                     {badge.label}
                   </span>
                   <div>
                     <p className="font-semibold text-slate-200">{evt.member_name}</p>
                     {evt.event_type === "payment" && (
-                      <p className="text-[10px] text-amber-400 font-mono">
+                      <p className="text-[0.85em] text-amber-400 font-mono">
                         ₹{evt.amount} • {evt.plan_type}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <span className="text-[11px] text-slate-500 font-mono">{timeFormatted}</span>
+                <span className="text-[0.9em] text-slate-500 font-mono">{timeFormatted}</span>
               </div>
             );
           })
