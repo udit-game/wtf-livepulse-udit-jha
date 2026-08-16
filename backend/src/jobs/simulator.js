@@ -2,7 +2,7 @@ const pool = require("../db/pool");
 const { broadcast } = require("../websocket/server");
 const simulatorService = require("../services/simulatorService");
 
-// Hourly Traffic Multipliers (00:00 - 23:00 IST)
+// Hourly Traffic Multipliers (00:00 - 23:00 local app timezone)
 const HOURLY_MULTIPLIERS = [
   0.00, 0.00, 0.00, 0.00, 0.00, 0.30, // 00:00 - 05:59
   0.60, 1.00, 1.00, 1.00,             // 06:00 - 09:59 (Morning Rush)
@@ -18,8 +18,11 @@ const HOURLY_MULTIPLIERS = [
  * Pure helper function to get current traffic multiplier based on IST hour
  * (Exported for Jest Unit Testing)
  */
+const config = require("../config");
+const APP_TIMEZONE = config.appTimezone || 'Asia/Kolkata';
+
 function getTrafficMultiplier(date = new Date()) {
-  const options = { timeZone: 'Asia/Kolkata', hour: '2-digit', hour12: false };
+  const options = { timeZone: APP_TIMEZONE, hour: '2-digit', hour12: false };
   const hourString = new Intl.DateTimeFormat([], options).format(date);
   const hour = parseInt(hourString, 10) % 24;
   return HOURLY_MULTIPLIERS[hour] ?? 0.0;
@@ -187,7 +190,7 @@ async function handlePaymentEvent() {
   const revQuery = await pool.query(
     `SELECT COALESCE(SUM(amount), 0)::FLOAT AS today_total
      FROM payments
-     WHERE gym_id = $1 AND paid_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'`,
+     WHERE gym_id = $1 AND paid_at >= DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}'`,
     [member.gym_id]
   );
 

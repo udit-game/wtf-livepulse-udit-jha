@@ -33,6 +33,8 @@ function evaluateRevenueDrop(todayRevenue, lastWeekSameDayRevenue) {
 /**
  * Main Anomaly Detection Loop (Runs every 30 seconds)
  */
+const config = require("../config");
+const APP_TIMEZONE = config.appTimezone || 'Asia/Kolkata';
 async function checkAnomalies() {
   try {
     const gymsQuery = await pool.query(`SELECT id, name, capacity, opens_at, closes_at, status FROM gyms WHERE status = 'active'`);
@@ -52,7 +54,7 @@ async function checkAnomalies() {
  * Rule 1: Zero Check-ins Alert (Warning)
  */
 async function evaluateGymZeroCheckins(gym) {
-  const nowInIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const nowInIST = new Date(new Date().toLocaleString("en-US", { timeZone: APP_TIMEZONE }));
   const currentISTTime = `${String(nowInIST.getHours()).padStart(2, '0')}:${String(nowInIST.getMinutes()).padStart(2, '0')}`;
   
   const isOperatingHours = currentISTTime >= gym.opens_at && currentISTTime <= gym.closes_at || true; // Overide for testing purposes
@@ -123,7 +125,7 @@ async function evaluateGymRevenueDrop(gym) {
   const todayRes = await pool.query(
     `SELECT COALESCE(SUM(amount), 0)::FLOAT AS today_total 
      FROM payments 
-     WHERE gym_id = $1 AND paid_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'`,
+     WHERE gym_id = $1 AND paid_at >= DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}'`,
     [gym.id]
   );
 
@@ -132,8 +134,8 @@ async function evaluateGymRevenueDrop(gym) {
     `SELECT COALESCE(SUM(amount), 0)::FLOAT AS last_week_total 
      FROM payments 
      WHERE gym_id = $1 
-       AND paid_at >= (DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata' - INTERVAL '7 days')
-       AND paid_at < (DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata' - INTERVAL '6 days')`,
+       AND paid_at >= (DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}' - INTERVAL '7 days')
+       AND paid_at < (DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}' - INTERVAL '6 days')`,
     [gym.id]
   );
 

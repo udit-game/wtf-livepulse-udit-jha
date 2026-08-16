@@ -38,6 +38,7 @@ services:
       PORT: 3001
       DATABASE_URL: postgres://${POSTGRES_USER:-wtf}:${POSTGRES_PASSWORD:-wtf_secret}@db:5432/${POSTGRES_DB:-wtf_livepulse}
       NODE_ENV: production
+      APP_TIMEZONE: ${TZ:-Asia/Kolkata}
     ports:
       - "3001:3001"
     depends_on:

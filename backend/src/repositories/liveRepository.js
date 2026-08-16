@@ -1,4 +1,6 @@
 const pool = require("../db/pool");
+const config = require("../config");
+const APP_TIMEZONE = config.appTimezone || 'Asia/Kolkata';
 
 async function getGymSnapshot(gymId) {
   const occupancyQuery = pool.query(
@@ -18,13 +20,13 @@ async function getGymSnapshot(gymId) {
     WHERE gym_id = $1
       AND paid_at >= DATE_TRUNC(
         'day',
-        NOW() AT TIME ZONE 'Asia/Kolkata'
-      ) AT TIME ZONE 'Asia/Kolkata'
+        NOW() AT TIME ZONE '${APP_TIMEZONE}'
+      ) AT TIME ZONE '${APP_TIMEZONE}'
       AND paid_at < (
         DATE_TRUNC(
           'day',
-          NOW() AT TIME ZONE 'Asia/Kolkata'
-        ) AT TIME ZONE 'Asia/Kolkata'
+          NOW() AT TIME ZONE '${APP_TIMEZONE}'
+        ) AT TIME ZONE '${APP_TIMEZONE}'
       ) + INTERVAL '1 day'
     `,
     [gymId]

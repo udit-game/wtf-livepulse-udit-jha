@@ -1,4 +1,6 @@
 const pool = require("../db/pool");
+const config = require("../config");
+const APP_TIMEZONE = config.appTimezone || 'Asia/Kolkata';
 
 const DATE_RANGES = {
   "7d": 7,
@@ -32,7 +34,7 @@ async function getGymAnalytics(gymId, dateRange) {
     FROM payments
     WHERE gym_id = $1
       AND paid_at >= (
-        DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+        DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}'
       ) - ($2 * INTERVAL '1 day')
     GROUP BY plan_type
     ORDER BY total_revenue DESC
@@ -72,7 +74,7 @@ async function getGymAnalytics(gymId, dateRange) {
     FROM payments
     WHERE gym_id = $1
       AND paid_at >= (
-        DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+        DATE_TRUNC('day', NOW() AT TIME ZONE '${APP_TIMEZONE}') AT TIME ZONE '${APP_TIMEZONE}'
       ) - ($2 * INTERVAL '1 day')
     GROUP BY payment_type
     `,

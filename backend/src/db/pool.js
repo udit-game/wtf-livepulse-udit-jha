@@ -1,9 +1,9 @@
 require("dotenv").config();
 const { Pool } = require("pg");
+const config = require("../config");
 
-const connectionString =
-  process.env.DATABASE_URL ||
-  "postgres://wtf:wtf_secret@localhost:5432/wtf_livepulse";
+// Use DATABASE_URL provided by centralized config (set by infrastructure)
+const connectionString = config.databaseUrl;
 
 const pool = new Pool({
   connectionString,

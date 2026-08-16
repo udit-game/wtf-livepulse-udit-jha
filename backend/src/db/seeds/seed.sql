@@ -311,7 +311,10 @@ BEGIN
         t.checkin_time + (INTERVAL '45 minutes' + (random() * INTERVAL '45 minutes'))
     FROM members m
     CROSS JOIN LATERAL (
-        SELECT v_now - (INTERVAL '1 day' * (20 + floor(random() * 70))) AS checkin_time
+        SELECT date_trunc('day', v_now) 
+             - (INTERVAL '1 day' * (20 + floor(random() * 70)::int)) 
+             + INTERVAL '9 hours' 
+             + (floor(random() * 60) || ' minutes')::interval AS checkin_time
     ) t
     WHERE m.status IN ('inactive', 'frozen');
 
@@ -321,7 +324,7 @@ BEGIN
     -- 4.3 CHURN RISK POPULATION SETUP (Mandatory >= 230 Members)
     --------------------------------------------------------------------------------
     -- Fix vs. the old version: pick the member sets ONCE into temp tables and
-    -- reuse the SAME sets for both the DELETE and the INSERT. Previously each
+    -- reuse the SAME sets for both the DELETE and the INSERT. Previously eachn
     -- statement re-ran ORDER BY random() independently, so the delete target
     -- and insert target were two different random samples.
     -- This block also now runs BEFORE the "currently checked in" open-checkin
@@ -341,7 +344,10 @@ BEGIN
         t.checkin_time + (INTERVAL '45 minutes' + (random() * INTERVAL '45 minutes'))
     FROM tmp_high_risk
     CROSS JOIN LATERAL (
-        SELECT v_now - (INTERVAL '46 days' + (random() * INTERVAL '12 days')) AS checkin_time
+        SELECT date_trunc('day', v_now) 
+             - (INTERVAL '1 day' * (46 + floor(random() * 12)::int)) 
+             + INTERVAL '10 hours' 
+             + (floor(random() * 60) || ' minutes')::interval AS checkin_time
     ) t;
 
     CREATE TEMP TABLE tmp_critical_risk AS
@@ -358,7 +364,10 @@ BEGIN
         t.checkin_time + (INTERVAL '45 minutes' + (random() * INTERVAL '45 minutes'))
     FROM tmp_critical_risk
     CROSS JOIN LATERAL (
-        SELECT v_now - (INTERVAL '61 days' + (random() * INTERVAL '20 days')) AS checkin_time
+        SELECT date_trunc('day', v_now) 
+             - (INTERVAL '1 day' * (61 + floor(random() * 20)::int)) 
+             + INTERVAL '11 hours' 
+             + (floor(random() * 60) || ' minutes')::interval AS checkin_time
     ) t;
 
     CREATE TEMP TABLE tmp_churn_risk_ids AS
