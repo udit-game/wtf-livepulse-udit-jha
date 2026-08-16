@@ -52,7 +52,7 @@ CREATE INDEX idx_payments_date
 
 -- Required: active anomalies only
 CREATE INDEX idx_anomalies_active
-    ON anomalies (gym_id, detected_at DESC)
+    ON anomalies (detected_at DESC, gym_id)
     WHERE resolved = FALSE;
 
 

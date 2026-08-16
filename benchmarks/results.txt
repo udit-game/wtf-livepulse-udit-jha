@@ -1,22 +1,169 @@
- docker exec -it wtf_livepulse_db psql -U wtf -d wtf_livepulse -P pager=off -c "
-EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
-SELECT COUNT(*) FROM checkins WHERE gym_id = (SELECT id FROM gyms LIMIT 1) AND checked_out IS NULL;
+(base) uditjha@udits-MacBook-Air wtf-livepulse-udit-jha % >....                                                                                     
+-- Grab a real active gym UUID
+SELECT id AS gym_uuid FROM gyms WHERE status = 'active' LIMIT 1 \gset
 
+-- Q1: Target < 0.5ms
 EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
-SELECT SUM(amount) FROM payments WHERE gym_id = (SELECT id FROM gyms LIMIT 1) AND paid_at >= CURRENT_DATE;
+SELECT COUNT(*) FROM checkins WHERE gym_id = :'gym_uuid' AND checked_out IS NULL;
 
+-- Q2: Target < 0.8ms
 EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
-SELECT id, name, last_checkin_at FROM members WHERE status='active' AND last_checkin_at < NOW() - INTERVAL '45 days';
+SELECT SUM(amount) FROM payments WHERE gym_id = :'gym_uuid' AND paid_at >= CURRENT_DATE;
 
+-- Q3: Target < 1.0ms
 EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
-SELECT * FROM gym_hourly_stats WHERE gym_id = (SELECT id FROM gyms LIMIT 1);
+SELECT id, name, last_checkin_at FROM members WHERE status = 'active' AND last_checkin_at < NOW() - INTERVAL '45 days';
 
+-- Q4: Target < 0.3ms
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT * FROM gym_hourly_stats WHERE gym_id = :'gym_uuid';
+
+-- Q5: Target < 2.0ms
 EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
 SELECT gym_id, SUM(amount) FROM payments WHERE paid_at >= NOW() - INTERVAL '30 days' GROUP BY gym_id ORDER BY SUM(amount) DESC;
 
+-- Q6: Target < 0.3ms
 EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
 SELECT * FROM anomalies WHERE resolved = FALSE ORDER BY detected_at DESC;
-"
+EOF
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+VACUUM
+Timing is on.
+Time: 1.005 ms
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4.85..4.86 rows=1 width=8) (actual time=0.020..0.021 rows=1 loops=1)
+   Buffers: shared hit=2
+   ->  Index Only Scan using idx_checkins_live_occupancy on checkins  (cost=0.15..4.76 rows=35 width=0) (actual time=0.016..0.017 rows=6 loops=1)
+         Index Cond: (gym_id = '3d444970-e1f2-41f8-a737-ee20326daaaf'::uuid)
+         Heap Fetches: 0
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=46
+ Planning Time: 0.331 ms
+ Execution Time: 0.070 ms
+(10 rows)
+
+Time: 0.894 ms
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=8.31..8.32 rows=1 width=32) (actual time=0.048..0.049 rows=1 loops=1)
+   Buffers: shared hit=9
+   ->  Index Scan using idx_payments_date on payments  (cost=0.29..8.30 rows=1 width=5) (actual time=0.012..0.017 rows=4 loops=1)
+         Index Cond: (paid_at >= CURRENT_DATE)
+         Filter: (gym_id = '3d444970-e1f2-41f8-a737-ee20326daaaf'::uuid)
+         Rows Removed by Filter: 32
+         Buffers: shared hit=9
+ Planning:
+   Buffers: shared hit=33
+ Planning Time: 0.302 ms
+ Execution Time: 0.062 ms
+(11 rows)
+
+Time: 0.704 ms
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on members  (cost=5.82..222.34 rows=198 width=36) (actual time=0.029..0.167 rows=230 loops=1)
+   Recheck Cond: ((last_checkin_at < (now() - '45 days'::interval)) AND (status = 'active'::text))
+   Heap Blocks: exact=85
+   Buffers: shared hit=87
+   ->  Bitmap Index Scan on idx_members_churn_risk  (cost=0.00..5.77 rows=198 width=0) (actual time=0.017..0.017 rows=230 loops=1)
+         Index Cond: (last_checkin_at < (now() - '45 days'::interval))
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=25
+ Planning Time: 0.131 ms
+ Execution Time: 0.203 ms
+(11 rows)
+
+Time: 0.716 ms
+                                                           QUERY PLAN                                                            
+---------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on gym_hourly_stats  (cost=5.27..15.87 rows=128 width=28) (actual time=0.071..0.095 rows=128 loops=1)
+   Recheck Cond: (gym_id = '3d444970-e1f2-41f8-a737-ee20326daaaf'::uuid)
+   Heap Blocks: exact=9
+   Buffers: shared hit=12
+   ->  Bitmap Index Scan on idx_gym_hourly_stats  (cost=0.00..5.24 rows=128 width=0) (actual time=0.066..0.066 rows=128 loops=1)
+         Index Cond: (gym_id = '3d444970-e1f2-41f8-a737-ee20326daaaf'::uuid)
+         Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=15
+ Planning Time: 0.096 ms
+ Execution Time: 0.115 ms
+(11 rows)
+
+Time: 0.361 ms
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=111.36..111.39 rows=10 width=48) (actual time=0.380..0.381 rows=10 loops=1)
+   Sort Key: (sum(amount)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=83
+   ->  HashAggregate  (cost=111.07..111.20 rows=10 width=48) (actual time=0.358..0.361 rows=10 loops=1)
+         Group Key: gym_id
+         Batches: 1  Memory Usage: 24kB
+         Buffers: shared hit=83
+         ->  Bitmap Heap Scan on payments  (cost=17.10..107.97 rows=621 width=21) (actual time=0.052..0.207 rows=620 loops=1)
+               Recheck Cond: (paid_at >= (now() - '30 days'::interval))
+               Heap Blocks: exact=80
+               Buffers: shared hit=83
+               ->  Bitmap Index Scan on idx_payments_date  (cost=0.00..16.95 rows=621 width=0) (actual time=0.042..0.042 rows=620 loops=1)
+                     Index Cond: (paid_at >= (now() - '30 days'::interval))
+                     Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=19
+ Planning Time: 0.116 ms
+ Execution Time: 0.423 ms
+(19 rows)
+
+Time: 0.936 ms
+                                                QUERY PLAN                                                 
+-----------------------------------------------------------------------------------------------------------
+ Sort  (cost=1.03..1.03 rows=2 width=167) (actual time=0.011..0.011 rows=2 loops=1)
+   Sort Key: detected_at DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=1
+   ->  Seq Scan on anomalies  (cost=0.00..1.02 rows=2 width=167) (actual time=0.004..0.005 rows=2 loops=1)
+         Filter: (NOT resolved)
+         Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=48
+ Planning Time: 0.215 ms
+ Execution Time: 0.020 ms
+(11 rows)
+
+Time: 0.461 ms
+(base) uditjha@udits-MacBook-Air wtf-livepulse-udit-jha % >....                                                                                     
+               Buffers: shared hit=83
+               ->  Bitmap Index Scan on idx_payments_date  (cost=0.00..16.95 rows=621 width=0) (actual time=0.042..0.042 rows=620 loops=1)
+                     Index Cond: (paid_at >= (now() - '30 days'::interval))
+                     Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=19
+ Planning Time: 0.116 ms
+ Execution Time: 0.423 ms
+(19 rows)
+
+Time: 0.936 ms
+                                                QUERY PLAN
+-----------------------------------------------------------------------------------------------------------
+ Sort  (cost=1.03..1.03 rows=2 width=167) (actual time=0.011..0.011 rows=2 loops=1)
+   Sort Key: detected_at DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=1
+   ->  Seq Scan on anomalies  (cost=0.00..1.02 rows=2 width=167) (actual time=0.004..0.005 rows=2 loops=1)
+         Filter: (NOT resolved)
+         Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=48
+ Planning Time: 0.215 ms
+ Execution Time: 0.020 ms
+(11 rows)
+
+Time: 0.461 ms
                                                                     QUERY PLAN                                                                     
 ---------------------------------------------------------------------------------------------------------------------------------------------------
  Aggregate  (cost=4.98..4.99 rows=1 width=8) (actual time=0.123..0.124 rows=1 loops=1)
