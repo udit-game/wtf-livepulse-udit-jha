@@ -4,6 +4,7 @@ BEGIN;
 -- so the hourly traffic pattern lines up with real Indian gym hours regardless of the
 -- container's default timezone (commonly UTC on stock Docker images).
 SET LOCAL timezone = 'Asia/Kolkata';
+SELECT setseed(0.42);
 
 DO $$
 DECLARE
@@ -25,7 +26,7 @@ DECLARE
 
     -- Base daily visit probability for an active member (before day-of-week weighting).
     -- Calibrated so total checkins land in the 250k-300k target band.
-    v_p_base        FLOAT := 0.85;
+    v_p_base        FLOAT := 0.93;
 
     -- Names array for realistic Indian names
     v_first_names TEXT[] := ARRAY['Rahul', 'Priya', 'Ankit', 'Neha', 'Arjun', 'Siddharth', 'Pooja', 'Rohan', 'Sneha', 'Vikas', 'Kavya', 'Aditya', 'Riya', 'Amit', 'Ananya', 'Karan', 'Shreya', 'Gaurav', 'Divya', 'Manish'];
@@ -73,20 +74,20 @@ BEGIN
     --------------------------------------------------------------------------------
     CREATE TEMP TABLE tmp_gym_config (
         gym_id UUID, capacity INT, m_count INT, active_pct FLOAT,
-        m_pct FLOAT, q_pct FLOAT, a_pct FLOAT
+        m_pct FLOAT, q_pct FLOAT, a_pct FLOAT, renewal_b INT   -- NEW
     ) ON COMMIT DROP;
 
     INSERT INTO tmp_gym_config VALUES
-    (v_lajpat_id,    220, 650, 0.88, 0.50, 0.30, 0.20),
-    (v_cp_id,        180, 550, 0.85, 0.40, 0.40, 0.20),
-    (v_bandra_id,    300, 750, 0.90, 0.40, 0.40, 0.20),
-    (v_powai_id,     250, 600, 0.87, 0.40, 0.40, 0.20),
-    (v_indira_id,    200, 550, 0.89, 0.40, 0.40, 0.20),
-    (v_kora_id,      180, 500, 0.86, 0.40, 0.40, 0.20),
-    (v_banjara_id,   160, 450, 0.84, 0.50, 0.30, 0.20),
-    (v_noida_id,     140, 400, 0.82, 0.60, 0.25, 0.15),
-    (v_saltlake_id,  120, 300, 0.80, 0.60, 0.30, 0.10),
-    (v_velachery_id, 110, 250, 0.78, 0.60, 0.30, 0.10);
+    (v_lajpat_id,    220, 650, 0.88, 0.50, 0.30, 0.20, 250),
+    (v_cp_id,        180, 550, 0.85, 0.40, 0.40, 0.20, 300),
+    (v_bandra_id,    300, 750, 0.90, 0.40, 0.40, 0.20, 100),
+    (v_powai_id,     250, 600, 0.87, 0.40, 0.40, 0.20, 150),
+    (v_indira_id,    200, 550, 0.89, 0.40, 0.40, 0.20, 400),
+    (v_kora_id,      180, 500, 0.86, 0.40, 0.40, 0.20, 250),
+    (v_banjara_id,   160, 450, 0.84, 0.50, 0.30, 0.20, 250),
+    (v_noida_id,     140, 400, 0.82, 0.60, 0.25, 0.15, 400),
+    (v_saltlake_id,  120, 300, 0.80, 0.60, 0.30, 0.10, 1500),
+    (v_velachery_id, 110, 250, 0.78, 0.60, 0.30, 0.10, 50);
 
     INSERT INTO members (id, gym_id, name, email, phone, plan_type, member_type, status, joined_at, plan_expires_at)
     SELECT
@@ -95,7 +96,7 @@ BEGIN
         m.full_name,
         LOWER(m.first_name || '.' || m.last_name || '.' || ROW_NUMBER() OVER (ORDER BY cfg.gym_id, m.seq) || '@gmail.com'),
         (CASE floor(random() * 3)::int WHEN 0 THEN '7' WHEN 1 THEN '8' ELSE '9' END)
-            || LPAD(CAST(FLOOR(random() * 99999999 + 10000000) AS TEXT), 8, '0'),
+            || LPAD(CAST(FLOOR(random() * 999999999) AS TEXT), 9, '0'),
         m.plan_type,
         m.member_type,
         m.status,
@@ -131,7 +132,7 @@ BEGIN
             -- 6,000 payments before the Salt Lake anomaly rows are even added --
             -- essentially zero margin. 18.5% keeps us comfortably under while
             -- still reading as "~20%" per spec.
-            CASE WHEN random() < 0.815 THEN 'new' ELSE 'renewal' END AS member_type
+            CASE WHEN random() < 0.83 THEN 'new' ELSE 'renewal' END AS member_type
         FROM generate_series(1, cfg.m_count) AS gs(seq)
     ) m
     CROSS JOIN LATERAL (
@@ -147,10 +148,10 @@ BEGIN
         -- (spec 5.2 explicitly allows a renewal member's original join to be
         -- 91-180 days ago).
         SELECT CASE
-            WHEN m.member_type = 'new' THEN v_now - (INTERVAL '1 day' * (90 - floor(89 * power(random(), 2.5))))
+            WHEN m.member_type = 'new' THEN v_now - (INTERVAL '1 day' * (90 - floor(89 * power(random(), 3.5))))
             ELSE v_now - (
                 (CASE m.plan_type WHEN 'monthly' THEN INTERVAL '30 days' WHEN 'quarterly' THEN INTERVAL '90 days' ELSE INTERVAL '365 days' END)
-                + INTERVAL '1 day' * (1 + floor(random() * 90))
+                + INTERVAL '1 day' * (1 + floor(random() * cfg.renewal_b))
             )
         END AS joined_at
     ) j;
@@ -201,6 +202,27 @@ BEGIN
     --------------------------------------------------------------------------------
     -- 3.1 ANOMALY SCENARIO C SETUP: Salt Lake Revenue Drop
     --------------------------------------------------------------------------------
+    -- Gives the other 9 gyms ~3-4 payments today (~₹12k - ₹20k) so only Salt Lake drops
+    INSERT INTO payments (id, member_id, gym_id, amount, plan_type, payment_type, paid_at)
+    SELECT
+        gen_random_uuid(),
+        m.id,
+        m.gym_id,
+        CASE m.plan_type
+            WHEN 'monthly' THEN 1499.00
+            WHEN 'quarterly' THEN 3999.00
+            WHEN 'annual' THEN 11999.00
+        END,
+        m.plan_type,
+        'new',
+        date_trunc('day', v_now) + (random() * (v_now - date_trunc('day', v_now)))
+    FROM (
+        SELECT id, gym_id, plan_type,
+               ROW_NUMBER() OVER (PARTITION BY gym_id ORDER BY random()) as rn
+        FROM members
+        WHERE gym_id != v_saltlake_id AND status = 'active'
+    ) m
+    WHERE m.rn <= 4; -- 4 payments x 9 gyms = 36 payments total
     DELETE FROM payments
     WHERE gym_id = v_saltlake_id
       AND paid_at >= date_trunc('day', v_now);
@@ -371,9 +393,9 @@ BEGIN
     JOIN tmp_gym_config cfg ON m.gym_id = cfg.gym_id
     WHERE m.rn <= (
         CASE
-            WHEN cfg.capacity >= 250 THEN 25 + floor(random() * 2)::int  -- Large: 25-26 (of 25-35 range)
-            WHEN cfg.capacity >= 160 THEN 15 + floor(random() * 2)::int  -- Medium: 15-16 (of 15-25 range)
-            ELSE 8 + floor(random() * 2)::int                           -- Small: 8-9 (of 8-15 range)
+            WHEN cfg.capacity >= 250 THEN 8 + floor(random() * 2)::int  -- Large: 25-26 (of 25-35 range) -> made 8 to 9 to accomodate for annomaly scenario B's 275-295 checkins at Bandra West
+            WHEN cfg.capacity >= 160 THEN 5 + floor(random() * 2)::int  -- Medium: 15-16 (of 15-25 range)
+            ELSE 3 + floor(random() * 2)::int                           -- Small: 8-9 (of 8-15 range)
         END
     );
 

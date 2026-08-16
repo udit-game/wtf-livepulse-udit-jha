@@ -22,7 +22,7 @@ export function RevenueBreakdownChart({ revenueData = [], dateRange, onDateRange
             <button
               key={range}
               onClick={() => onDateRangeChange(range)}
-              className={`px-2.5 py-1 rounded transition ${
+              className={`px-2.5 py-1 text-white rounded transition ${
                 dateRange === range
                   ? "bg-theme-border text-white font-bold"
                   : "text-slate-400 hover:text-slate-200"
@@ -46,6 +46,8 @@ export function RevenueBreakdownChart({ revenueData = [], dateRange, onDateRange
               <YAxis stroke="#64748B" fontSize={11} tickLine={false} />
               <Tooltip
                 contentStyle={{ backgroundColor: "#1A1A2E", borderColor: "#2A2A4A", borderRadius: "8px", fontSize: "12px" }}
+                labelStyle={{ color: "#E2E8F0", fontSize: 12 }}
+                itemStyle={{ color: "#E2E8F0", fontSize: 13 }}
                 formatter={(val) => [`₹${val.toLocaleString("en-IN")}`, "Revenue"]}
               />
               <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>

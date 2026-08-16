@@ -55,7 +55,7 @@ async function evaluateGymZeroCheckins(gym) {
   const nowInIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const currentISTTime = `${String(nowInIST.getHours()).padStart(2, '0')}:${String(nowInIST.getMinutes()).padStart(2, '0')}`;
   
-  const isOperatingHours = currentISTTime >= gym.opens_at && currentISTTime <= gym.closes_at;
+  const isOperatingHours = currentISTTime >= gym.opens_at && currentISTTime <= gym.closes_at || true; // Overide for testing purposes
 
   const countRes = await pool.query(
     `SELECT COUNT(*)::INTEGER AS recent_count 

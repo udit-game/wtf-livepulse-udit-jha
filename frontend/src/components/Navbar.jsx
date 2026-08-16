@@ -12,7 +12,7 @@ export function Navbar({
   setActiveTab,
 }) {
   return (
-    <header className="bg-themeCard border-b border-themeBorder text-slate-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-50 shadow-lg">
+    <header className="bg-themeCard border-b border-themeBorder text-slate-200 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 fixed top-0 left-0 right-0 z-50 shadow-lg">
       {/* Brand & Connection Status */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
