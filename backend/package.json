@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "jest --detectOpenHandles --runInBand --forceExit"
+    "test": "jest --detectOpenHandles --runInBand --forceExit --coverage"
   },
   "jest": {
     "testEnvironment": "node",

@@ -125,6 +125,8 @@ describe("Backend Integration Test Suite", () => {
   test("POST /api/simulator/start returns status running and valid speed", async () => {
     const res = await request(app).post("/api/simulator/start").send({ speed: 5 });
     expect(res.statusCode).toBe(200);
+    const data = res.body.data || res.body;
+    expect(data.status).toBe("running");
   });
 
   // Test 10: POST /api/simulator/start input validation

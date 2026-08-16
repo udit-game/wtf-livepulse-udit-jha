@@ -14,4 +14,11 @@ describe("Simulator Traffic Multiplier Unit Tests", () => {
     const multiplier = getTrafficMultiplier(nightDate);
     expect(multiplier).toBe(0.0);
   });
+
+  // Test 12: Peak evening rush hour multiplier (19:00 IST)
+  test("getTrafficMultiplier applies peak multiplier during evening rush (19:00 IST)", () => {
+    const eveningDate = new Date("2026-08-08T19:00:00+05:30");
+    const multiplier = getTrafficMultiplier(eveningDate);
+    expect(multiplier).toBeGreaterThanOrEqual(0.8);
+  });
 });
