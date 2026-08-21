@@ -144,7 +144,11 @@ export function AnomalyLogTab({ gymId, resolvedAnomalies = [] }) {
                   </td>
                   <td className="py-3 px-3 font-mono font-semibold text-slate-200">{a.type}</td>
                   <td className="py-3 px-3 text-slate-400">{a.gym_name || a.gym_id}</td>
-                  <td className="py-3 px-3 max-w-xs truncate text-slate-300">{a.message}</td>
+                  <td className="group relative max-w-xs px-3 py-3 text-slate-300">
+                    <div className="truncate group-hover:overflow-visible group-hover:whitespace-normal">
+                      {a.message}
+                    </div>
+                  </td>
                   <td className="py-3 px-3 font-mono text-slate-500">
                     {new Date(a.detected_at).toLocaleTimeString("en-IN")}
                   </td>

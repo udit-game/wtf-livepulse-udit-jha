@@ -137,21 +137,19 @@ BEGIN
     ) m
     CROSS JOIN LATERAL (
         -- 'new' members: joined within the last 90 days (spec 3.2 baseline rule).
-        -- Skewed toward the older end of the window (not uniform) so that only
-        -- a realistic slice of the base looks like a "brand new signup" inside
-        -- any rolling 30-day window -- otherwise ~1/3 of the entire member base
-        -- would show a full-price new payment every 30 days, which is what blew
-        -- out the original script's 30-day revenue figures (V10).
+        -- Keep the first 8 days free for explicit revenue-anomaly fixtures. This
+        -- prevents ordinary member payments from randomly entering today's or
+        -- same-weekday-last-week's comparison windows.
         -- 'renewal' members: must have already completed at least one full plan
         -- cycle for their (later) renewal payment to be legitimately in the past,
         -- so their original join reaches back at least one cycle + a buffer
         -- (spec 5.2 explicitly allows a renewal member's original join to be
         -- 91-180 days ago).
         SELECT CASE
-            WHEN m.member_type = 'new' THEN v_now - (INTERVAL '1 day' * (90 - floor(89 * power(random(), 3.5))))
+            WHEN m.member_type = 'new' THEN v_now - (INTERVAL '1 day' * (90 - floor(82 * power(random(), 2.5))))
             ELSE v_now - (
                 (CASE m.plan_type WHEN 'monthly' THEN INTERVAL '30 days' WHEN 'quarterly' THEN INTERVAL '90 days' ELSE INTERVAL '365 days' END)
-                + INTERVAL '1 day' * (1 + floor(random() * cfg.renewal_b))
+                + INTERVAL '1 day' * (8 + floor(random() * cfg.renewal_b))
             )
         END AS joined_at
     ) j;

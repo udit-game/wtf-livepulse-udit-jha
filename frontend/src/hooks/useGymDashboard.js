@@ -58,7 +58,7 @@ export function useGymDashboard() {
   useEffect(() => {
     fetchAnomalies()
       .then((data) => {
-        setUnreadAnomalies(data.filter((a) => !a.dismissed));
+        setUnreadAnomalies(data.filter((a) => !a.resolved || !a.dismissed));
       })
       .catch(console.error);
   }, []);
